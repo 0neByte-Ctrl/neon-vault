@@ -1,0 +1,17 @@
+Overlay at your existing repository root. Keep config.js. Read START-HERE.md.
+
+.github/workflows/pages.yml
+QA-REPORT.md
+README.md
+SOURCE-NOTICE.md
+START-HERE.md
+app.js
+assets/city.gif
+data/district-status.js
+data/native-launch-tests.json
+index.html
+js/district-loader.js
+scripts/merge_district.py
+scripts/test_merge.py
+style.css
+tests/site-smoke.cjs

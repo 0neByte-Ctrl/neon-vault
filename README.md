@@ -1,3 +1,11 @@
+# District203 update — read START-HERE.md first
+
+This is the revised portal plus an automatic GitHub importer. The full native District203 import runs on your GitHub deployment, not inside this downloaded source ZIP. Default compatible launches use the separate District203 host unless you configure your own game origin. See START-HERE.md for exact status, preservation rules, limits and update steps.
+
+---
+
+## Original release guide (historical baseline)
+
 # Neon Vault — deployable static release
 
 A combined GameVault / 4texas4 portal themed around the supplied neon-city GIF. The browser tab says **Untitled document - Google Docs**, using the Google Docs favicon supplied in GameVault. This is an independent site, not Google Docs or a Google-affiliated service. Its header and account dialog identify Neon Vault.

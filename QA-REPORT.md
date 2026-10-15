@@ -1,24 +1,9 @@
-# Local verification report
+# District203 revision verification
 
-## Passed
-- JavaScript syntax checks.
-- All catalog paths labeled Included files exist in the delivered package.
-- Hash routing for Home, Games, Movies, Cloud, My library, Leaderboard, Tools and Schedule.
-- Desktop (1440 px) and mobile (390 px) layout overflow checks.
-- Search, category/source filters, pagination and favorites.
-- Guest library persistence after reload.
-- Neon 2048 valid moves, no-op moves, single-merge behavior, score calculation and local checkpoint persistence.
-- Manual movie position/episode-note persistence.
-- Save-file slot upload and library JSON export.
-- Original SOAR bell state at a fixed Central-time timestamp.
-- Honest account/leaderboard setup states when Firebase is unconfigured.
-- Visual inspection of desktop home, games, movies, cloud, library, leaderboard, tools and schedule; mobile home, account dialog and integrated game.
+Passed locally: importer unit tests; syntax checks; stable existing IDs; exact/alias matching; no fuzzy sequel matches; unmatched game records unchanged; unrelated collections unchanged; byte-for-byte preservation of 1,908 original game, configuration and bell-schedule files; desktop/mobile portal navigation and overflow checks; GIF play/pause controls; first-party 2048; Continue-last-game.
 
-## Not live-tested
-- Firebase authentication, verification/reset emails, cross-device synchronization, deployed Firestore rules/indexes: requires the user's own Firebase project.
-- DuckDuckGo endpoint availability on the user's network; the standard GET form was structurally checked.
-- External game hosts, movie permissions/streams, CloudMoon and legacy tools.
-- Separate-origin game deployment and every third-party game engine.
-- Actual GitHub Pages deployment: workflow and relative-path routing are included; no repository was published during this task.
+Visually reviewed: new desktop home and mobile Settings. Source GIF verified as 36 frames, 60 ms/frame, infinite loop.
 
-The site is a deployable static release, not an assertion that every external catalog entry is playable offline or that backend configuration is already active. See README.md for limits and activation steps.
+NOT completed here: full District203 source download; production-sized import; actual native District203 game launches; live Firebase; GitHub Pages deployment; third-party website availability. A blocked sandbox download and unavailable general network prevented those checks. The included GitHub workflow performs the full import and the native checks described in START-HERE.md before deploying.
+
+Reports from a completed GitHub build are available in data/district-import.json and data/native-launch-tests.json and as a workflow artifact. A pending/live-links state in the seed package is not a completed native import.
