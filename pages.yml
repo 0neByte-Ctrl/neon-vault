@@ -1,0 +1,71 @@
+name: Import District203 and deploy Neon Vault
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      district_ref:
+        description: District203 branch, tag, or commit to import
+        default: main
+        required: false
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: pages
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Test merge rules before downloading upstream
+        run: python scripts/test_merge.py
+      - name: Stage portal source
+        run: |
+          mkdir -p _site
+          rsync -a --exclude=_site --exclude=.git --exclude=.github --exclude=tests --exclude=scripts --exclude=source-archives ./ _site/
+      - name: Download District203 and merge complete game folders
+        env:
+          DISTRICT_REF: ${{ inputs.district_ref || 'main' }}
+        run: python scripts/merge_district.py --site _site --download-to "$RUNNER_TEMP/district203" --ref "$DISTRICT_REF" --budget-mb 800
+      - name: Install browser test tools
+        working-directory: ${{ runner.temp }}
+        run: |
+          npm install --no-save playwright
+          npx playwright install --with-deps chromium
+      - name: Test portal and representative native game launches
+        env:
+          NODE_PATH: ${{ runner.temp }}/node_modules
+        run: node tests/site-smoke.cjs --site _site --require-import
+      - name: Attach import and launch reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: district203-import-and-tests
+          path: |
+            _site/data/district-import.json
+            _site/data/native-launch-tests.json
+            _site/data/district-replaced-originals.json
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy verified artifact
+        id: deployment
+        uses: actions/deploy-pages@v4
