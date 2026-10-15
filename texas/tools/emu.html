@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en" >
+<head>
+  <meta charset="UTF-8" />
+  <title>Universal Emulator + ZIP Support + ROM Site</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script src="https://greys2121.github.io/RUFFFFFLE_EMBED/ruffle/ruffle.js"></script>
+  <style>
+    * {
+      margin: 0; padding: 0; box-sizing: border-box;
+    }
+    html, body {
+  height: 100%; width: 100%;
+  background: #0a111d;
+  color: white;
+  font-family: 'Poppins', sans-serif;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  padding: 20px;
+}
+    #uploadBox {
+      border: 3px dashed rgba(255,255,255,0.3);
+      border-radius: 12px;
+      width: 90vw;
+      max-width: 700px;
+      height: 180px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      cursor: pointer;
+      user-select: none;
+      transition: background-color 0.3s ease;
+      position: relative;
+      color: rgba(255,255,255,0.7);
+      font-weight: 600;
+      font-size: 1.3rem;
+      padding: 10px;
+    }
+    #uploadBox.hovered {
+      background-color: rgba(255,255,255,0.1);
+      color: white;
+    }
+    #fileInput {
+      position: absolute;
+      width: 100%; height: 100%;
+      top: 0; left: 0;
+      opacity: 0;
+      cursor: pointer;
+    }
+    #supportedTypes {
+      margin-top: 12px;
+      font-size: 0.9rem;
+      color: rgba(255,255,255,0.6);
+      max-width: 700px;
+      text-align: center;
+      user-select: none;
+    }
+    #fileList {
+      margin-top: 20px;
+      max-width: 700px;
+      width: 90vw;
+      background: rgba(255,255,255,0.05);
+      border-radius: 10px;
+      padding: 12px;
+      overflow-y: auto;
+      max-height: 200px;
+      font-family: monospace;
+    }
+    #fileList button {
+      background: none;
+      border: none;
+      color: #5ab4ff;
+      text-align: left;
+      cursor: pointer;
+      width: 100%;
+      padding: 6px 8px;
+      border-radius: 6px;
+      transition: background-color 0.2s ease;
+      font-size: 1rem;
+    }
+    #fileList button:hover {
+      background-color: rgba(90,180,255,0.2);
+    }
+    #iframeOverlay {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: #000c;
+      display: none;
+      flex-direction: column;
+      z-index: 9999;
+    }
+    #iframeOverlay.active {
+      display: flex;
+    }
+    #iframeOverlay header {
+      background: #111c30;
+      padding: 10px 15px;
+      color: white;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    #iframeOverlay iframe {
+      flex-grow: 1;
+      border: none;
+      width: 100%;
+    }
+    #getGamesBtn, #getSWFBtn {
+  margin-top: 20px;
+  padding: 10px 18px;
+  font-weight: 700;
+  font-size: 1rem;
+  border-radius: 8px;
+  background: #0b79f7;
+  border: none;
+  color: white;
+  cursor: pointer;
+  user-select: none;
+  transition: background-color 0.25s ease;
+}
+#getGamesBtn:hover, #getSWFBtn:hover {
+  background: #0a5ecc;
+}
+    #loadingMessage {
+      margin-top: 10px;
+      font-style: italic;
+      color: #aaa;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="uploadBox" tabindex="0" aria-label="Upload ROM or SWF file">
+    Click or Drop a ROM, SWF, or ZIP file here to start emulating
+    <input type="file" id="fileInput" accept=".zip,.swf,.nes,.unf,.unif,.smc,.sfc,.gba,.gb,.n64,.z64,.nds,.bin,.cue,.iso,.fds,.fig,.gd3,.gd7,.dx2,.bsx,.swc,.pce,.ngp,.ws,.wsc,.col,.cv,.d64" />
+  </div>
+
+  <button id="getGamesBtn" aria-label="Get games for the emulator">Click Here To Get Games for the Emulator</button>
+<button id="getSWFBtn" aria-label="Get SWF files for the emulator" style="margin-left: 10px;">Get SWF Files</button>
+
+  <div id="fileList" aria-live="polite" role="list" style="display:none"></div>
+
+  <div id="loadingMessage" aria-live="polite" role="alert"></div>
+
+  <div id="supportedTypes" aria-label="Supported file types">
+    Supported file types: <br />
+    <strong>SWF:</strong> .swf &nbsp;&nbsp;|&nbsp;&nbsp;
+    <strong>ZIP archives containing ROM/SWF files</strong> &nbsp;&nbsp;|&nbsp;&nbsp;
+    <strong>NES:</strong> .nes, .unf, .unif, .fds, .fig &nbsp;&nbsp;|&nbsp;&nbsp;
+    <strong>SNES:</strong> .smc, .sfc, .gd3, .gd7, .dx2, .bsx, .swc &nbsp;&nbsp;|&nbsp;&nbsp;
+    <strong>GBA:</strong> .gba &nbsp;&nbsp;|&nbsp;&nbsp;
+    <strong>GB:</strong> .gb &nbsp;&nbsp;|&nbsp;&nbsp;
+    <strong>N64:</strong> .n64, .z64 &nbsp;&nbsp;|&nbsp;&nbsp;
+    <strong>NDS:</strong> .nds &nbsp;&nbsp;|&nbsp;&nbsp;
+    <strong>PSX:</strong> .bin, .cue, .iso &nbsp;&nbsp;|&nbsp;&nbsp;
+    <em>and more...</em>
+  </div>
+
+  <div id="iframeOverlay" role="dialog" aria-modal="true" aria-label="Get Games Website">
+  <header>
+    <button id="backBtn" aria-label="Back to Emulator">⬅ Back</button>
+    <span>Get Games</span>
+    <div style="width:40px"></div>
+  </header>
+  <iframe src="https://www.romsgames.net/" title="Get Games"></iframe>
+</div>
+
+<div id="swfOverlay" role="dialog" aria-modal="true" aria-label="Get SWF Files Website" style="display:none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #000c; flex-direction: column; z-index: 9999;">
+  <header style="background: #111c30; padding: 10px 15px; color: white; font-weight: 600; display: flex; align-items: center; justify-content: space-between;">
+    <button id="swfBackBtn" aria-label="Back to Emulator">⬅ Back</button>
+    <span>Get SWF Files</span>
+    <div style="width:40px"></div>
+  </header>
+  <iframe src="https://archive.org/download/armorgames" title="Get SWF Files" style="flex-grow:1; border:none; width:100%; height:100%;"></iframe>
+</div>
+
+<script>
+  const uploadBox = document.getElementById('uploadBox');
+  const fileInput = document.getElementById('fileInput');
+  const fileList = document.getElementById('fileList');
+  const loadingMessage = document.getElementById('loadingMessage');
+  const iframeOverlay = document.getElementById('iframeOverlay');
+  const backBtn = document.getElementById('backBtn');
+  const getGamesBtn = document.getElementById('getGamesBtn');
+
+  // Ruffle setup
+  const ruffle = window.RufflePlayer.newest();
+  const rufflePlayer = ruffle.createPlayer();
+
+  const supportedExtensions = [
+    "swf","nes","unf","unif","smc","sfc","gba","gb","n64","z64",
+    "nds","bin","cue","iso","fds","fig","gd3","gd7","dx2","bsx",
+    "swc","pce","ngp","ws","wsc","col","cv","d64"
+  ];
+
+  // Clear emulator container and add an element
+  function clearEmulator() {
+    emulatorContainer.innerHTML = '';
+  }
+
+  async function loadROM(file, ext, name) {
+  // Clear whole page and create fresh emulator container filling viewport
+  document.body.innerHTML = '';
+  const emulatorContainer = document.createElement('div');
+  emulatorContainer.id = 'emulatorContainer';
+  emulatorContainer.style.position = 'fixed';
+  emulatorContainer.style.top = '0';
+  emulatorContainer.style.left = '0';
+  emulatorContainer.style.right = '0';
+  emulatorContainer.style.bottom = '0';
+  emulatorContainer.style.margin = '0';
+  emulatorContainer.style.padding = '0';
+  emulatorContainer.style.overflow = 'hidden';
+  document.body.appendChild(emulatorContainer);
+
+  const gameDiv = document.createElement('div');
+  gameDiv.id = 'game';
+  // Make gameDiv fill entire viewport with no gaps
+  gameDiv.style.position = 'absolute';
+  gameDiv.style.top = '0';
+  gameDiv.style.left = '0';
+  gameDiv.style.right = '0';
+  gameDiv.style.bottom = '0';
+  gameDiv.style.margin = '0';
+  gameDiv.style.padding = '0';
+  gameDiv.style.width = '100%';
+  gameDiv.style.height = '100%';
+  gameDiv.style.overflow = 'hidden';
+  emulatorContainer.appendChild(gameDiv);
+
+    window.EJS_player = '#game';
+    window.EJS_gameName = name;
+    window.EJS_gameUrl = file;
+    window.EJS_startOnLoaded = true;
+    window.EJS_AdUrl = 'about:blank';
+
+    const coreMap = {
+      nes: ['nes', 'unf', 'unif', 'fds', 'fig'],
+      snes: ['smc', 'sfc', 'gd3', 'gd7', 'dx2', 'bsx', 'swc'],
+      gba: ['gba'],
+      gb: ['gb'],
+      n64: ['n64', 'z64'],
+      nds: ['nds'],
+      psx: ['bin', 'cue', 'iso'],
+      pce: ['pce'],
+      ngp: ['ngp'],
+      ws: ['ws', 'wsc'],
+      coleco: ['col', 'cv'],
+      vice_x64: ['d64']
+    };
+
+    let core = null;
+    for (const key in coreMap) {
+      if (coreMap[key].includes(ext)) {
+        core = key;
+        break;
+      }
+    }
+    if (!core) {
+      alert('Unsupported ROM file type.');
+      return;
+    }
+    window.EJS_core = core;
+    window.EJS_pathtodata = 'https://cdn.emulatorjs.org/stable/data/';
+
+    return new Promise((resolve) => {
+      const script = document.createElement('script');
+      script.src = 'https://cdn.emulatorjs.org/stable/data/loader.js';
+      script.onload = resolve;
+      document.body.appendChild(script);
+    });
+  }
+
+  function loadSWF(file) {
+  // Clear whole page and create fresh emulator container filling viewport
+  document.body.innerHTML = '';
+  const emulatorContainer = document.createElement('div');
+  emulatorContainer.id = 'emulatorContainer';
+  emulatorContainer.style.width = '100vw';
+  emulatorContainer.style.height = '100vh';
+  emulatorContainer.style.margin = '0';
+  emulatorContainer.style.padding = '0';
+  emulatorContainer.style.display = 'flex';
+  emulatorContainer.style.justifyContent = 'center';
+  emulatorContainer.style.alignItems = 'center';
+  emulatorContainer.style.overflow = 'hidden';
+  document.body.appendChild(emulatorContainer);
+
+  emulatorContainer.appendChild(rufflePlayer);
+
+    rufflePlayer.style.position = 'fixed';
+  rufflePlayer.style.top = '0';
+  rufflePlayer.style.left = '0';
+  rufflePlayer.style.right = '0';
+  rufflePlayer.style.bottom = '0';
+  rufflePlayer.style.margin = '0';
+  rufflePlayer.style.padding = '0';
+  rufflePlayer.style.width = '100%';
+  rufflePlayer.style.height = '100%';
+
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const blob = new Blob([e.target.result], { type: 'application/x-shockwave-flash' });
+      const url = URL.createObjectURL(blob);
+      rufflePlayer.load(url);
+    };
+    reader.readAsArrayBuffer(file);
+  }
+
+  // Handle file selection
+  async function handleFile(file) {
+    loadingMessage.textContent = '';
+    fileList.style.display = 'none';
+    const name = file.name;
+    const ext = name.split('.').pop().toLowerCase();
+
+    if (ext === 'zip') {
+      loadingMessage.textContent = 'Extracting ZIP... please wait.';
+      try {
+        const zip = await JSZip.loadAsync(file);
+        const foundFiles = [];
+        zip.forEach((relativePath, zipEntry) => {
+          if (!zipEntry.dir) {
+            const ext = zipEntry.name.split('.').pop().toLowerCase();
+            if (supportedExtensions.includes(ext)) {
+              foundFiles.push(zipEntry);
+            }
+          }
+        });
+
+        if (foundFiles.length === 0) {
+          loadingMessage.textContent = '';
+          alert('No supported emulator files found inside the ZIP.');
+          return;
+        }
+        if (foundFiles.length === 1) {
+          loadingMessage.textContent = 'One compatible file found. Loading...';
+          const fileData = await foundFiles[0].async('blob');
+          fileData.name = foundFiles[0].name;
+          if (foundFiles[0].name.endsWith('.swf')) {
+            loadSWF(fileData);
+          } else {
+            await loadROM(fileData, fileData.name.split('.').pop().toLowerCase(), fileData.name);
+          }
+          loadingMessage.textContent = '';
+          return;
+        }
+        // Multiple files - show list for user to pick
+        loadingMessage.textContent = '';
+        fileList.innerHTML = '';
+        fileList.style.display = 'block';
+        foundFiles.forEach((zipEntry) => {
+          const btn = document.createElement('button');
+          btn.textContent = zipEntry.name;
+          btn.onclick = async () => {
+            loadingMessage.textContent = 'Loading ' + zipEntry.name + ' ...';
+            const fileData = await zipEntry.async('blob');
+            fileData.name = zipEntry.name;
+            if (zipEntry.name.endsWith('.swf')) {
+              loadSWF(fileData);
+            } else {
+              await loadROM(fileData, fileData.name.split('.').pop().toLowerCase(), fileData.name);
+            }
+            loadingMessage.textContent = '';
+            fileList.style.display = 'none';
+          };
+          fileList.appendChild(btn);
+        });
+      } catch(e) {
+        loadingMessage.textContent = '';
+        alert('Error reading ZIP file.');
+        console.error(e);
+      }
+    } else if (ext === 'swf') {
+      loadSWF(file);
+    } else if (supportedExtensions.includes(ext)) {
+      await loadROM(file, ext, name);
+    } else {
+      alert('Unsupported file type.');
+    }
+  }
+
+  // Drag & drop highlight
+  ['dragenter', 'dragover'].forEach(eventName => {
+    uploadBox.addEventListener(eventName, (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      uploadBox.classList.add('hovered');
+    });
+  });
+  ['dragleave', 'drop'].forEach(eventName => {
+    uploadBox.addEventListener(eventName, (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      uploadBox.classList.remove('hovered');
+    });
+  });
+
+  uploadBox.addEventListener('drop', (e) => {
+    const dt = e.dataTransfer;
+    if (dt.files.length) {
+      handleFile(dt.files[0]);
+    }
+  });
+
+  fileInput.addEventListener('change', (e) => {
+    if (e.target.files.length) {
+      handleFile(e.target.files[0]);
+    }
+  });
+
+  getGamesBtn.addEventListener('click', () => {
+  iframeOverlay.classList.add('active');
+});
+
+backBtn.addEventListener('click', () => {
+  iframeOverlay.classList.remove('active');
+});
+
+// New SWF button and back button handlers
+const getSWFBtn = document.getElementById('getSWFBtn');
+const swfOverlay = document.getElementById('swfOverlay');
+const swfBackBtn = document.getElementById('swfBackBtn');
+
+getSWFBtn.addEventListener('click', () => {
+  swfOverlay.style.display = 'flex';
+});
+
+swfBackBtn.addEventListener('click', () => {
+  swfOverlay.style.display = 'none';
+});
+
+  backBtn.addEventListener('click', () => {
+    iframeOverlay.classList.remove('active');
+  });
+
+</script>
+
+</body>
+</html>

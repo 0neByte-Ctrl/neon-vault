@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Data Link Maker</title>
+  <style>
+    * { box-sizing: border-box; }
+    body, html {
+      height: 100%;
+      margin: 0;
+      background: #121212;
+      color: #ddd;
+      font-family: 'Segoe UI', Tahoma, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    #app {
+      width: 650px;
+      background: #1e1e1e;
+      border-radius: 12px;
+      padding: 30px 25px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.7), 0 0 15px #666 inset;
+      text-align: center;
+    }
+    h1 {
+      margin-bottom: 20px;
+      font-weight: 700;
+      color: #e0e0e0;
+    }
+    .button-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+    }
+    button {
+      background: #333;
+      border: none;
+      color: #eee;
+      padding: 14px 0;
+      flex: 1;
+      font-size: 1.1rem;
+      font-weight: 600;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: background 0.3s ease;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.6);
+    }
+    button:hover { background: #555; }
+    button:active { background: #222; }
+    textarea, input[type="text"], select {
+      width: 100%;
+      padding: 10px 12px;
+      margin: 12px 0;
+      border-radius: 8px;
+      border: 1px solid #444;
+      background: #222;
+      color: #eee;
+      font-family: monospace;
+      font-size: 1rem;
+    }
+    label {
+      display: block;
+      margin-top: 10px;
+      font-weight: 600;
+      color: #bbb;
+      text-align: left;
+    }
+    .checkbox-container {
+      margin-top: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      text-align: left;
+      font-weight: 600;
+      color: #bbb;
+    }
+    #dataUrlOutput {
+      margin-top: 20px;
+      font-family: monospace;
+      font-size: 0.85rem;
+      background: #111;
+      border-radius: 10px;
+      padding: 12px;
+      max-height: 150px;
+      overflow-y: auto;
+      word-break: break-word;
+      color: #aaa;
+      white-space: pre-wrap;
+      text-align: left;
+    }
+    .copy-highlight-buttons {
+      margin-top: 8px;
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+    .copy-highlight-buttons button {
+      background: #444;
+      border-radius: 8px;
+      padding: 6px 12px;
+      font-size: 0.9rem;
+      color: #ddd;
+      cursor: pointer;
+      transition: background 0.25s ease;
+    }
+    .copy-highlight-buttons button:hover {
+      background: #666;
+    }
+    #btnBack {
+      width: 100%;
+      max-width: 200px;
+      margin-top: 20px;
+      border-radius: 12px;
+      padding: 12px;
+      font-size: 1rem;
+    }
+    #copyNotify {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      background: #2a2a2a;
+      padding: 10px 14px;
+      border-radius: 8px;
+      color: #b0ffb0;
+      font-weight: bold;
+      font-size: 0.9rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 0 10px rgba(0,255,0,0.2);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.5s ease;
+    }
+    #copyNotify svg {
+      width: 18px;
+      height: 18px;
+      fill: #7fff7f;
+    }
+    #copyNotify.show {
+      opacity: 1;
+    }
+    .drop-area {
+      border: 2px dashed #555;
+      border-radius: 10px;
+      padding: 30px;
+      margin: 20px 0;
+      color: #aaa;
+      cursor: pointer;
+      user-select: none;
+      transition: border-color 0.3s ease, background 0.3s ease;
+    }
+    .drop-area.dragover {
+      border-color: #78aaff;
+      background: #263f7a;
+      color: #e0e0e0;
+    }
+  </style>
+</head>
+<body>
+
+<div id="app">
+  <h1>Data Link Maker</h1>
+  <div class="button-row">
+    <button id="btnUpload">Upload File</button>
+    <button id="btnFetch">Fetch URL</button>
+    <button id="btnPaste">Paste Content</button>
+  </div>
+</div>
+
+<div id="copyNotify">
+  <svg viewBox="0 0 24 24"><path d="M9 16.17 4.83 12 3.41 13.41 9 19l12-12-1.41-1.41z"/></svg>
+  Copied!
+</div>
+
+<script>
+const app = document.getElementById('app');
+const copyNotify = document.getElementById('copyNotify');
+const mimeMap = {
+  html: 'text/html', js: 'application/javascript', css: 'text/css',
+  json: 'application/json', svg: 'image/svg+xml', txt: 'text/plain',
+  xml: 'application/xml', csv: 'text/csv', md: 'text/markdown', php: 'application/x-httpd-php'
+};
+
+function setAppContent(html) { app.innerHTML = html; }
+function showDataUrlOnly(dataUrl) {
+  setAppContent(`
+    <label>Data URL:</label>
+    <pre id="dataUrlOutput" tabindex="0" readonly>${dataUrl}</pre>
+    <div class="copy-highlight-buttons">
+      <button id="copyBtn">Copy</button>
+      <button id="highlightBtn">Highlight All</button>
+    </div>
+    <button id="btnBack">Back</button>
+  `);
+  addCopyHighlightBack();
+}
+function addCopyHighlightBack() {
+  document.getElementById('copyBtn')?.addEventListener('click', () => {
+    const text = document.getElementById('dataUrlOutput').textContent;
+    navigator.clipboard.writeText(text).then(() => {
+      copyNotify.classList.add("show");
+      setTimeout(() => copyNotify.classList.remove("show"), 3000);
+    });
+  });
+  document.getElementById('highlightBtn')?.addEventListener('click', () => {
+    const range = document.createRange();
+    range.selectNodeContents(document.getElementById('dataUrlOutput'));
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+  });
+  document.getElementById('btnBack')?.addEventListener('click', () => location.reload());
+}
+
+function pasteUI() {
+  setAppContent(`
+    <h1>Paste Content</h1>
+    <textarea id="contentInput" rows="8" placeholder="Paste your file content"></textarea>
+    <label>Select file extension:</label>
+    <select id="extSelect">
+      ${Object.keys(mimeMap).map(e => `<option value="${e}">${e}</option>`).join('')}
+    </select>
+    <div class="checkbox-container">
+      <input type="checkbox" id="encodeBase64" checked />
+      <label for="encodeBase64">Encode with Base64</label>
+    </div>
+    <div class="button-row" style="margin-top: 20px;">
+      <button id="btnMake">Make Data URL</button>
+      <button id="btnBack">Back</button>
+    </div>
+  `);
+  document.getElementById('btnMake').onclick = () => {
+    const text = document.getElementById('contentInput').value;
+    const ext = document.getElementById('extSelect').value;
+    const mime = mimeMap[ext] || 'text/plain';
+    const base64 = document.getElementById('encodeBase64').checked;
+    if (!text) return alert("Paste something first.");
+    try {
+      let url = base64
+        ? `data:${mime};base64,${btoa(unescape(encodeURIComponent(text)))}`
+        : `data:${mime},${encodeURIComponent(text)}`;
+      showDataUrlOnly(url);
+    } catch (e) {
+      alert("Encoding error.");
+    }
+  };
+  document.getElementById('btnBack').onclick = () => location.reload();
+}
+
+function uploadUI() {
+  setAppContent(`
+    <h1>Upload File</h1>
+    <div class="drop-area" id="dropArea">Click or drag & drop a file here</div>
+    <input type="file" id="fileInput" style="display:none" />
+    <button id="btnBack">Back</button>
+  `);
+  const dropArea = document.getElementById('dropArea');
+  const fileInput = document.getElementById('fileInput');
+  dropArea.onclick = () => fileInput.click();
+  dropArea.addEventListener('dragover', e => {
+    e.preventDefault(); dropArea.classList.add('dragover');
+  });
+  dropArea.addEventListener('dragleave', e => {
+    e.preventDefault(); dropArea.classList.remove('dragover');
+  });
+  dropArea.addEventListener('drop', e => {
+    e.preventDefault(); dropArea.classList.remove('dragover');
+    const file = e.dataTransfer.files[0];
+    const reader = new FileReader();
+    reader.onload = e => showDataUrlOnly(e.target.result);
+    reader.readAsDataURL(file);
+  });
+  fileInput.onchange = () => {
+    const file = fileInput.files[0];
+    const reader = new FileReader();
+    reader.onload = e => showDataUrlOnly(e.target.result);
+    reader.readAsDataURL(file);
+  };
+  document.getElementById('btnBack').onclick = () => location.reload();
+}
+
+function fetchUI() {
+  setAppContent(`
+    <h1>Fetch File URL</h1>
+    <input type="text" id="urlInput" placeholder="https://example.com/file.txt" />
+    <div class="button-row" style="margin-top: 20px;">
+      <button id="fetchBtn">Fetch</button>
+      <button id="btnBack">Back</button>
+    </div>
+  `);
+  document.getElementById('fetchBtn').onclick = async () => {
+    const url = document.getElementById('urlInput').value.trim();
+    if (!url) return alert("Enter a URL.");
+    try {
+      const res = await fetch(url);
+      const blob = await res.blob();
+      const reader = new FileReader();
+      reader.onload = e => showDataUrlOnly(e.target.result);
+      reader.readAsDataURL(blob);
+    } catch {
+      alert("Failed to fetch.");
+    }
+  };
+  document.getElementById('btnBack').onclick = () => location.reload();
+}
+
+document.getElementById('btnUpload').onclick = uploadUI;
+document.getElementById('btnFetch').onclick = fetchUI;
+document.getElementById('btnPaste').onclick = pasteUI;
+</script>
+
+</body>
+</html>

@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <base target="_blank">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Live Code Editor</title>
+  <link rel="icon" href="https://4texas4.github.io/ratgames/icon.png">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      display: flex;
+      flex-direction: row;
+      height: 100vh;
+      background: #0d0d0d;
+      color: #ddd;
+      font-family: "Comic Sans MS", sans-serif;
+    }
+
+    .editor-panel {
+      width: 50%;
+      display: flex;
+      flex-direction: column;
+      padding: 10px;
+      background: #111;
+      border-right: 2px solid #222;
+    }
+
+    .editor-tabs {
+      display: flex;
+      gap: 6px;
+      padding: 6px;
+      background: #1a1a1a;
+      border-bottom: 1px solid #333;
+    }
+
+    .tab-button {
+      background: #333;
+      color: #ddd;
+      border: none;
+      padding: 6px 10px;
+      font-family: "Comic Sans MS", sans-serif;
+      font-size: 13px;
+      border-radius: 4px 4px 0 0;
+      cursor: pointer;
+    }
+
+    .tab-button.active {
+      background: #555;
+      font-weight: bold;
+    }
+
+    .section {
+      display: none;
+      flex-direction: column;
+      flex: 1;
+      background: #1a1a1a;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    .section textarea {
+      flex: 1;
+      padding: 12px;
+      font-size: 13px;
+      color: #ddd;
+      background: #111;
+      border: none;
+      resize: none;
+      outline: none;
+      font-family: "Comic Sans MS", sans-serif;
+      overflow-y: auto;
+    }
+
+    .output-panel {
+      width: 50%;
+      display: flex;
+      flex-direction: column;
+    }
+
+    iframe {
+      flex: 1;
+      width: 100%;
+      border: none;
+      background: #fff;
+    }
+
+    .buttons {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-around;
+      padding: 10px;
+      background: #111;
+      border-top: 2px solid #222;
+      gap: 6px;
+    }
+
+    button {
+      background: #333;
+      color: #ddd;
+      border: none;
+      padding: 8px 12px;
+      font-family: "Comic Sans MS", sans-serif;
+      font-size: 15px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    button:hover {
+      background: #555;
+    }
+
+    .overlay {
+      position: fixed;
+      top: 5%;
+      left: 5%;
+      width: 90%;
+      height: 90%;
+      background: #222;
+      border: 2px solid #444;
+      border-radius: 12px;
+      z-index: 9999;
+      display: none;
+      flex-direction: column;
+      padding: 10px;
+    }
+
+    .overlay-buttons {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 6px;
+    }
+
+    .left-buttons {
+      display: flex;
+      gap: 6px;
+    }
+
+    .overlay textarea {
+      flex: 1;
+      width: 100%;
+      background: #111;
+      color: #ddd;
+      font-size: 10px;
+      padding: 10px;
+      border: none;
+      resize: none;
+      overflow-y: auto;
+      border-radius: 6px;
+      font-family: monospace;
+    }
+
+    textarea::-webkit-scrollbar {
+      width: 8px;
+    }
+    textarea::-webkit-scrollbar-thumb {
+      background: #555;
+      border-radius: 4px;
+    }
+
+    .html-section,
+    .css-section,
+    .js-section {
+      display: none;
+    }
+
+    .section.active {
+  display: flex;
+}
+
+.font-size-controls button {
+  background: #222;
+  color: #fff;
+  border: none;
+  padding: 4px 10px;
+  font-size: 18px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.font-size-controls button:hover {
+  background: #444;
+}
+
+.font-size-controls input[type=number]::-webkit-inner-spin-button, 
+.font-size-controls input[type=number]::-webkit-outer-spin-button { 
+  -webkit-appearance: none; 
+  margin: 0; 
+}
+
+.font-size-controls input[type=number] {
+  height: 34px;
+  padding: 8px 12px;
+  font-size: 15px;
+  border-radius: 6px;
+  background: #222;
+  color: #fff;
+  border: none;
+  outline: none;
+  text-align: center;
+  font-family: "Comic Sans MS", sans-serif;
+  box-sizing: border-box;
+}
+  </style>
+</head>
+<body>
+
+  <div class="editor-panel">
+    <div class="editor-tabs">
+  <button class="tab-button active" data-tab="html">HTML</button>
+  <button class="tab-button" data-tab="css">CSS</button>
+  <button class="tab-button" data-tab="js">JS</button>
+  <div class="font-size-controls" style="margin-left:auto; display: flex; align-items: center; gap: 6px;">
+  <button id="decreaseFont">−</button>
+  <input type="number" id="fontSizeInput" min="8" max="30" style="width: 50px; text-align: center; font-family: monospace; font-size: 14px; border-radius: 4px; border: none; background: #222; color: #fff; outline: none;" />
+  <button id="increaseFont">+</button>
+</div>
+</div>
+
+    <div class="section html-section active">
+      <textarea id="htmlCode" spellcheck="false">&lt;h1&gt;Hi Gang&lt;/h1&gt;
+&lt;p&gt;This is a live code editor where you can pretty much do cool stuff yep&lt;/p&gt;
+      </textarea>
+    </div>
+
+    <div class="section css-section">
+      <textarea id="cssCode" spellcheck="false">body {
+  background-color: #222;
+  color: #ddd;
+  font-family: "Comic Sans MS", sans-serif;
+  padding: 20px;
+}
+h1 {
+}
+      </textarea>
+    </div>
+
+    <div class="section js-section">
+      <textarea id="jsCode" spellcheck="false">console.log("sup");
+      </textarea>
+    </div>
+  </div>
+
+  <div class="output-panel">
+    <iframe id="preview"></iframe>
+    <div class="buttons">
+      <button id="openBlob">Open In Blob URL</button>
+      <button id="openBlank">Open In about:blank</button>
+      <button id="download">Download</button>
+      <button id="generateDataURL">Generate Data URL</button>
+      <button id="fullscreenBtn">Fullscreen</button>
+    </div>
+  </div>
+
+  <div class="overlay" id="overlay">
+    <div class="overlay-buttons">
+      <div class="left-buttons">
+        <button id="copyBtn">Copy</button>
+        <button id="highlightBtn">Highlight</button>
+      </div>
+      <button id="closeBtn">X</button>
+    </div>
+    <textarea id="dataUrlText" readonly></textarea>
+  </div>
+
+  <script>
+    const htmlCode = document.getElementById('htmlCode');
+    const cssCode = document.getElementById('cssCode');
+    const jsCode = document.getElementById('jsCode');
+    const preview = document.getElementById('preview');
+
+    function getFullContent() {
+      const html = htmlCode.value;
+      const css = `<style>${cssCode.value}</style>`;
+      const js = `<script>${jsCode.value}<\/script>`;
+      return `<!DOCTYPE html><html><head><meta charset="UTF-8">${css}</head><body>${html}${js}</body></html>`;
+    }
+
+    function updatePreview() {
+      const full = getFullContent();
+      const blob = new Blob([full], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+      preview.src = url;
+      if (preview.previousURL) URL.revokeObjectURL(preview.previousURL);
+      preview.previousURL = url;
+    }
+
+    htmlCode.addEventListener('input', updatePreview);
+    cssCode.addEventListener('input', updatePreview);
+    jsCode.addEventListener('input', updatePreview);
+
+    updatePreview();
+
+    document.getElementById('openBlob').addEventListener('click', () => {
+      const full = getFullContent();
+      const blob = new Blob([full], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+      window.open(url, '_blank');
+    });
+
+    document.getElementById('openBlank').addEventListener('click', () => {
+      const full = getFullContent();
+      const newWin = window.open();
+      newWin.document.write(full);
+      newWin.document.close();
+    });
+
+    document.getElementById('download').addEventListener('click', () => {
+      const full = getFullContent();
+      const blob = new Blob([full], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'combined.html';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    });
+
+    document.getElementById('generateDataURL').addEventListener('click', () => {
+      const full = getFullContent();
+      const encoded = btoa(unescape(encodeURIComponent(full)));
+      const dataUrl = `data:text/html;base64,${encoded}`;
+      document.getElementById('dataUrlText').value = dataUrl;
+      document.getElementById('overlay').style.display = 'flex';
+    });
+
+    document.getElementById('copyBtn').addEventListener('click', () => {
+      document.getElementById('dataUrlText').select();
+      document.execCommand('copy');
+    });
+
+    document.getElementById('highlightBtn').addEventListener('click', () => {
+      document.getElementById('dataUrlText').select();
+    });
+
+    document.getElementById('closeBtn').addEventListener('click', () => {
+      document.getElementById('overlay').style.display = 'none';
+    });
+
+    document.getElementById('overlay').addEventListener('click', (e) => {
+      if (e.target === document.getElementById('overlay')) {
+        document.getElementById('overlay').style.display = 'none';
+      }
+    });
+
+    document.getElementById('fullscreenBtn').addEventListener('click', () => {
+      if (preview.requestFullscreen) {
+        preview.requestFullscreen();
+      } else if (preview.webkitRequestFullscreen) {
+        preview.webkitRequestFullscreen();
+      } else if (preview.msRequestFullscreen) {
+        preview.msRequestFullscreen();
+      }
+    });
+
+    const tabButtons = document.querySelectorAll('.tab-button');
+let currentFontSize = 13;
+const textareas = [htmlCode, cssCode, jsCode];
+const fontSizeInput = document.getElementById('fontSizeInput');
+
+function updateFontSize() {
+  textareas.forEach(area => {
+    area.style.fontSize = currentFontSize + 'px';
+  });
+  fontSizeInput.value = currentFontSize;
+}
+
+document.getElementById('increaseFont').addEventListener('click', () => {
+  if (currentFontSize < 30) {
+    currentFontSize += 1;
+    updateFontSize();
+  }
+});
+
+document.getElementById('decreaseFont').addEventListener('click', () => {
+  if (currentFontSize > 8) {
+    currentFontSize -= 1;
+    updateFontSize();
+  }
+});
+
+fontSizeInput.addEventListener('change', () => {
+  let val = parseInt(fontSizeInput.value);
+  if (!isNaN(val)) {
+    if (val > 30) val = 30;
+    if (val < 8) val = 8;
+    currentFontSize = val;
+    updateFontSize();
+  } else {
+    // Reset invalid input to current font size
+    fontSizeInput.value = currentFontSize;
+  }
+});
+
+updateFontSize(); // Initialize font size and input value
+    const sections = {
+      html: document.querySelector('.html-section'),
+      css: document.querySelector('.css-section'),
+      js: document.querySelector('.js-section')
+    };
+
+    tabButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        tabButtons.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+
+        Object.keys(sections).forEach(key => {
+          sections[key].classList.remove('active');
+          if (key === btn.dataset.tab) {
+            sections[key].classList.add('active');
+          }
+        });
+      });
+    });
+  </script>
+
+</body>
+</html>

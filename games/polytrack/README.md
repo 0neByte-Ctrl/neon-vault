@@ -1,0 +1,54 @@
+# PolyTrack (unofficial reupload)
+
+PolyTrack v0.6.3. Original game by [Kodub.com](https://www.kodub.com).
+Play the official version on [CrazyGames](https://www.crazygames.com/game/polytrack).
+
+This is an unofficial reupload for access on restricted networks. It is not
+affiliated with, endorsed by, or sponsored by Kodub.com, CrazyGames, Poki or
+itch.io.
+
+Hosted under section 4 (Mods and Reuploads) of the PolyTrack Terms of Service:
+https://www.kodub.com/terms/polytrack
+
+Conditions this copy is kept in compliance with:
+
+- Non-commercial. No ads, sponsorships, paid access or other monetization.
+- Attribution to Kodub.com and a clickable link to the official CrazyGames page.
+- Declared unofficial, both here and in the game's own startup notice.
+- `window.polytrackModConfiguration` is set in index.html. This is what triggers
+  the built-in unofficial notice. Do not remove it.
+- Outbound links inside the game, including the kodub.com menu link, are intact.
+- Not optimized for search engines and not competing for discoverability with
+  the official game pages.
+
+Kodub.com and CrazyGames reserve the right to request removal.
+
+## What is added here
+
+The game bundle is byte-for-byte what Kodub shipped. Everything this site adds
+sits beside it and stands in front of a browser API instead:
+
+- `leaderboard.js` - answers the game's leaderboard requests from Supabase.
+- `rooms.js` - signalling for the game's own multiplayer, so rooms and invite
+  codes work without kodub's servers. Races themselves run peer to peer.
+- `scene.js` - a handle on the 3D scene, for room options about what is drawn,
+  and the ceiling on how often it is drawn.
+- `rooms_ui.js` - the room lobby: public rooms, track lists, round length, car
+  visibility.
+- `creator.js` - tells the analytics dashboard who is playing and in which
+  room, and lets the site owner join them from there.
+- `friends.js` - shows a friend's ask to join the room, and opens a room for
+  them on Accept.
+- `graphics.js` - a Quality preset row in the game's settings, Low settings
+  for weaker devices on first launch, resolution that drops on its own when
+  the frame rate does, and a Max frame rate row that starts at 60.
+- `save.js` - keeps a signed-in player's save (car, best times, custom tracks,
+  unlocks, controls) on their GameVault account, so it follows them to any
+  browser. It starts the game once the account's copy is in.
+- `physics.js` - holds a room join until the game's physics check is done,
+  and fetches fresh models when stale cached ones fail that check.
+- `race.js` - takes the player straight onto the weekly challenge's track
+  when they come from its Race it or Race now button, ready to drive.
+- `leaderboard.sql`, `rooms.sql`, `save.sql` - the Supabase side of these.
+
+No request reaches vps.kodub.com.
